@@ -2,8 +2,9 @@
 // 烈酒知識網 - 主要 JS 邏輯
 // ============================================
 
-const WIKI_CACHE_KEY = 'spirits_wiki_image_cache_v1';
-const WIKI_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const WIKI_CACHE_KEY = 'spirits_wiki_image_cache_v2';
+const WIKI_CACHE_TTL_HIT = 7 * 24 * 60 * 60 * 1000; // 命中 7 天
+const WIKI_CACHE_TTL_MISS = 24 * 60 * 60 * 1000;    // 未命中只快取 1 天，避免暫時失敗被卡住
 
 function loadWikiCache() {
   try {
@@ -23,31 +24,56 @@ function saveWikiCache(cache) {
   }
 }
 
-// 從 Wikipedia REST API 取得頁面縮圖
+function normalizeWikiTitle(pageTitle) {
+  try {
+    return decodeURIComponent(pageTitle).replace(/_/g, ' ');
+  } catch (e) {
+    return pageTitle.replace(/_/g, ' ');
+  }
+}
+
+// 透過 MediaWiki Action API 取得頁面縮圖
+// 使用 redirects=1 自動跟隨頁面重定向（解決如 Kavalan_Distillery → Kavalan distillery 等大小寫問題）
+// origin=* 為 CORS 必須
 async function fetchWikiThumbnail(pageTitle, lang) {
   if (!pageTitle) return null;
   const cache = loadWikiCache();
   const cacheKey = `${lang || 'en'}:${pageTitle}`;
   const cached = cache[cacheKey];
-  if (cached && (Date.now() - cached.ts < WIKI_CACHE_TTL)) {
-    return cached.url; // 可能為 null（代表查過沒圖）
+  if (cached) {
+    const ttl = cached.url ? WIKI_CACHE_TTL_HIT : WIKI_CACHE_TTL_MISS;
+    if (Date.now() - cached.ts < ttl) return cached.url;
   }
 
   const language = lang || 'en';
-  const apiUrl = `https://${language}.wikipedia.org/api/rest_v1/page/summary/${pageTitle}`;
+  const title = normalizeWikiTitle(pageTitle);
+  const params = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    prop: 'pageimages',
+    piprop: 'thumbnail|original',
+    pithumbsize: '400',
+    redirects: '1',
+    origin: '*',
+    titles: title
+  });
+  const apiUrl = `https://${language}.wikipedia.org/w/api.php?${params.toString()}`;
 
   try {
-    const res = await fetch(apiUrl, {
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    });
+    const res = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) {
       cache[cacheKey] = { url: null, ts: Date.now() };
       saveWikiCache(cache);
       return null;
     }
     const data = await res.json();
-    const thumb = (data.thumbnail && data.thumbnail.source) || (data.originalimage && data.originalimage.source) || null;
+    const pages = (data && data.query && data.query.pages) || {};
+    let thumb = null;
+    for (const pid in pages) {
+      const p = pages[pid];
+      if (p && p.thumbnail && p.thumbnail.source) { thumb = p.thumbnail.source; break; }
+      if (p && p.original && p.original.source) { thumb = p.original.source; break; }
+    }
     cache[cacheKey] = { url: thumb, ts: Date.now() };
     saveWikiCache(cache);
     return thumb;
