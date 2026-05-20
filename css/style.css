@@ -1219,11 +1219,32 @@ a:hover { color: var(--color-amber-light); }
   gap: 1rem;
 }
 
+.lightbox-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .lightbox-img {
   max-width: 100%;
   max-height: 75vh;
   object-fit: contain;
   filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.6));
+}
+
+.lightbox-svg {
+  width: min(60vw, 280px);
+  height: auto;
+  max-height: 75vh;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.6));
+}
+
+.lightbox-placeholder-note {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  opacity: 0.75;
 }
 
 .lightbox-caption {

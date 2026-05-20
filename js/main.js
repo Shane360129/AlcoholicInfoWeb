@@ -276,6 +276,17 @@ function parsePrice(p) {
   return parseInt(m[0].replace(/,/g, ''), 10);
 }
 
+// 以品牌名稱中的 Latin 字段做排序鍵：對「大摩 Dalmore」這類混合名稱，
+// 取出最長的英文部分（Dalmore）；若整名皆中文則退回小寫整名。
+function nameSortKey(name) {
+  if (!name) return '';
+  const latin = name.match(/[A-Za-z][A-Za-z0-9'.&\-\s]+/g);
+  if (latin && latin.length) {
+    return latin.reduce((a, b) => (b.length > a.length ? b : a)).trim().toLowerCase();
+  }
+  return name.toLowerCase();
+}
+
 function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
   const el = document.getElementById('brandsGrid');
   if (!el) return;
@@ -347,7 +358,8 @@ function initToolbar(brands) {
         <label for="sortSelect" class="toolbar-label">排序</label>
         <select id="sortSelect" class="toolbar-sort">
           <option value="default">預設順序</option>
-          <option value="name-asc">名稱 A-Z</option>
+          <option value="name-asc">名稱 A → Z</option>
+          <option value="name-desc">名稱 Z → A</option>
           <option value="price-asc">價格：低 → 高</option>
           <option value="price-desc">價格：高 → 低</option>
         </select>
@@ -418,7 +430,8 @@ function applyFilters() {
       const bIdx = parseInt(b.dataset.idx, 10);
       const aBrand = currentBrands[aIdx] || {};
       const bBrand = currentBrands[bIdx] || {};
-      if (sort === 'name-asc') return (aBrand.name || '').localeCompare(bBrand.name || '', 'zh-Hant');
+      if (sort === 'name-asc') return nameSortKey(aBrand.name).localeCompare(nameSortKey(bBrand.name));
+      if (sort === 'name-desc') return nameSortKey(bBrand.name).localeCompare(nameSortKey(aBrand.name));
       if (sort === 'price-asc') return parsePrice(aBrand.price) - parsePrice(bBrand.price);
       if (sort === 'price-desc') return parsePrice(bBrand.price) - parsePrice(aBrand.price);
       return 0;
@@ -646,7 +659,7 @@ function ensureLightbox() {
   lb.innerHTML = `
     <button class="lightbox-close" aria-label="關閉">×</button>
     <div class="lightbox-content">
-      <img class="lightbox-img" alt="" />
+      <div class="lightbox-media"></div>
       <div class="lightbox-caption"></div>
     </div>
   `;
@@ -663,15 +676,38 @@ function ensureLightbox() {
 }
 
 function openLightbox(cardEl, product) {
-  // 只有當卡片裡已經是真實圖片時才開放大（SVG 佔位無意義）
-  const imgEl = cardEl.querySelector('.product-image-box img.product-image');
-  if (!imgEl) return;
+  const box = cardEl.querySelector('.product-image-box');
+  if (!box) return;
   const lb = ensureLightbox();
-  const big = lb.querySelector('.lightbox-img');
+  const media = lb.querySelector('.lightbox-media');
   const cap = lb.querySelector('.lightbox-caption');
-  big.src = imgEl.src;
-  big.alt = product.name;
-  cap.innerHTML = `<div>${escapeHtml(product.name)}</div>${product.price ? `<div class="product-price">${escapeHtml(product.price)}</div>` : ''}`;
+  media.innerHTML = '';
+
+  const imgEl = box.querySelector('img.product-image');
+  let hasRealImg = false;
+  if (imgEl) {
+    const big = document.createElement('img');
+    big.className = 'lightbox-img';
+    big.src = imgEl.src;
+    big.alt = product.name;
+    media.appendChild(big);
+    hasRealImg = true;
+  } else {
+    const svgEl = box.querySelector('svg.bottle-svg');
+    if (!svgEl) return;
+    const clone = svgEl.cloneNode(true);
+    clone.classList.add('lightbox-svg');
+    clone.removeAttribute('aria-hidden');
+    clone.setAttribute('role', 'img');
+    clone.setAttribute('aria-label', product.name);
+    media.appendChild(clone);
+  }
+
+  cap.innerHTML = `
+    <div>${escapeHtml(product.name)}</div>
+    ${product.price ? `<div class="product-price">${escapeHtml(product.price)}</div>` : ''}
+    ${hasRealImg ? '' : '<div class="lightbox-placeholder-note">圖示為示意圖（暫無實際產品圖）</div>'}
+  `;
   lb.classList.add('open');
   document.body.style.overflow = 'hidden';
   lb.querySelector('.lightbox-close').focus();
