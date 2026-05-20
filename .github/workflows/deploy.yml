@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - main
-      - claude/alcohol-knowledge-website-7mIoc
   workflow_dispatch:
 
 permissions:
