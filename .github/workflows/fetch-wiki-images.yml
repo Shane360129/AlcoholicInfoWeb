@@ -1,0 +1,34 @@
+name: 更新 Wikipedia 圖片快取
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch Wikipedia images
+        run: node scripts/fetch-wiki-images.js
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images/wiki data/wiki-images.js
+          if git diff --cached --quiet; then
+            echo "圖片無變更，跳過 commit"
+          else
+            git commit -m "自動更新 Wikipedia 圖片快取"
+            git push
+          fi

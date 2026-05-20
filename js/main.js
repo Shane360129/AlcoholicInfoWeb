@@ -112,9 +112,22 @@ function createBottleSVG(bottleColor, labelColor, label, uniqueId) {
   `;
 }
 
+// 從本地 manifest 取得圖片路徑（由 scripts/fetch-wiki-images.js 產生的 wiki-images.js）
+// 從 /pages/*.html 載入時需加上 ../ 前綴
+function resolveLocalWikiImage(brand) {
+  if (!window.wikiImages) return null;
+  const relPath = window.wikiImages[brand.name];
+  if (!relPath) return null;
+  const prefix = document.body.dataset.spirit ? '../' : '';
+  return prefix + relPath;
+}
+
 async function loadWikiImage(cardEl, brand) {
   if (!brand.wikiPage) return;
-  const url = await fetchWikiThumbnail(brand.wikiPage, brand.wikiLang);
+
+  // 優先使用 repo 內預先快取的本地圖片，失敗才打 Wikipedia API
+  let url = resolveLocalWikiImage(brand);
+  if (!url) url = await fetchWikiThumbnail(brand.wikiPage, brand.wikiLang);
   if (!url) return;
 
   const bottleEl = cardEl.querySelector('.brand-bottle');
