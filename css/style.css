@@ -371,6 +371,10 @@ a:hover { color: var(--color-amber-light); }
   padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 1.2rem;
+  align-items: start;
 }
 
 .brand-card:hover {
@@ -378,6 +382,50 @@ a:hover { color: var(--color-amber-light); }
   border-color: var(--color-amber);
   transform: translateY(-3px);
   box-shadow: var(--shadow-soft);
+}
+
+.brand-bottle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.3rem;
+  min-height: 140px;
+  position: relative;
+}
+
+.brand-bottle.has-image {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.brand-image {
+  width: 100%;
+  max-width: 70px;
+  max-height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.brand-card:hover .brand-image {
+  transform: translateY(-4px) scale(1.05);
+}
+
+.bottle-svg {
+  width: 60px;
+  height: 140px;
+  filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s ease;
+}
+
+.brand-card:hover .bottle-svg {
+  transform: translateY(-4px) rotate(-2deg);
+}
+
+.brand-info {
+  min-width: 0;
 }
 
 .brand-card-header {
@@ -424,6 +472,29 @@ a:hover { color: var(--color-amber-light); }
   font-size: 0.95rem;
   color: var(--color-text);
   line-height: 1.65;
+  margin-bottom: 0.8rem;
+}
+
+.brand-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(212, 163, 88, 0.1);
+  border: 1px solid rgba(212, 163, 88, 0.3);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  color: var(--color-amber-light);
+  font-weight: 500;
+  margin-top: 0.4rem;
+}
+
+.price-icon {
+  font-size: 0.9rem;
+}
+
+.price-text {
+  letter-spacing: 0.3px;
 }
 
 /* ============================================
@@ -607,6 +678,19 @@ a:hover { color: var(--color-amber-light); }
   .hero { padding: 3rem 1rem 2rem; }
   .brands-grid {
     grid-template-columns: 1fr;
+  }
+  .brand-card {
+    grid-template-columns: 56px 1fr;
+    gap: 0.8rem;
+    padding: 1.2rem;
+  }
+  .bottle-svg {
+    width: 50px;
+    height: 116px;
+  }
+  .brand-image {
+    max-width: 56px;
+    max-height: 116px;
   }
   .info-grid {
     grid-template-columns: 1fr;
