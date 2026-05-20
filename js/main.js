@@ -124,13 +124,16 @@ function resolveLocalWikiImage(brand) {
 
 async function loadWikiImage(cardEl, brand) {
   if (!brand.wikiPage) return;
+  const bottleEl = cardEl.querySelector('.brand-bottle');
 
   // 優先使用 repo 內預先快取的本地圖片，失敗才打 Wikipedia API
   let url = resolveLocalWikiImage(brand);
   if (!url) url = await fetchWikiThumbnail(brand.wikiPage, brand.wikiLang);
-  if (!url) return;
+  if (!url) {
+    if (bottleEl) bottleEl.classList.remove('loading');
+    return;
+  }
 
-  const bottleEl = cardEl.querySelector('.brand-bottle');
   if (!bottleEl) return;
 
   const img = new Image();
@@ -140,10 +143,11 @@ async function loadWikiImage(cardEl, brand) {
   img.referrerPolicy = 'no-referrer';
   img.onload = () => {
     bottleEl.innerHTML = '';
+    bottleEl.classList.remove('loading');
     bottleEl.appendChild(img);
     bottleEl.classList.add('has-image');
   };
-  // 載入失敗就保留原 SVG
+  img.onerror = () => bottleEl.classList.remove('loading');
   img.src = url;
 }
 
@@ -230,9 +234,11 @@ function renderSpiritPage(spiritKey) {
     `;
   }
 
+  currentBrands = data.brands;
   renderBrands(data.brands, data.bottleColor, data.labelColor);
-  initFilters(data.brands);
+  initToolbar(data.brands);
   initSearch(data.brands);
+  applyFilters(); // 初始化結果計數
 }
 
 function brandSlug(brand) {
@@ -260,6 +266,16 @@ function findBrandBySlug(slug) {
   return null;
 }
 
+// 目前頁面的品牌資料（供 toolbar 排序/篩選使用）
+let currentBrands = [];
+
+function parsePrice(p) {
+  if (!p) return Number.POSITIVE_INFINITY;
+  const m = p.match(/[\d,]+/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  return parseInt(m[0].replace(/,/g, ''), 10);
+}
+
 function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
   const el = document.getElementById('brandsGrid');
   if (!el) return;
@@ -270,10 +286,11 @@ function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
     const labelColor = b.labelColor || defaultLabelColor || '#f0d878';
     const uniqueId = `b${idx}-${Math.random().toString(36).slice(2, 8)}`;
     const slug = brandSlug(b);
+    const hasWiki = !!b.wikiPage;
     return `
-      <a class="brand-card-link" href="brand.html?b=${encodeURIComponent(slug)}" data-country="${b.country}" data-category="${b.category}" data-name="${b.name.toLowerCase()}" data-idx="${idx}">
+      <a class="brand-card-link" href="brand.html?b=${encodeURIComponent(slug)}" data-country="${b.country}" data-category="${b.category}" data-name="${b.name.toLowerCase()}" data-price="${parsePrice(b.price)}" data-idx="${idx}">
         <div class="brand-card">
-          <div class="brand-bottle">
+          <div class="brand-bottle${hasWiki ? ' loading' : ''}">
             ${createBottleSVG(bottleColor, labelColor, label, uniqueId)}
           </div>
           <div class="brand-info">
@@ -302,42 +319,155 @@ function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
   });
 }
 
-function initFilters(brands) {
-  const filterBar = document.getElementById('filterBar');
-  if (!filterBar) return;
-  const countries = ['全部', ...new Set(brands.map(b => b.country))];
-  filterBar.innerHTML = countries.map((c, i) => `
-    <button class="filter-btn ${i === 0 ? 'active' : ''}" data-filter="${c}">${c}</button>
-  `).join('');
-  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      filterBrands(btn.dataset.filter);
-    });
-  });
+function buildChip(label, group, value, active) {
+  return `<button type="button" class="filter-btn${active ? ' active' : ''}" data-group="${group}" data-value="${value}" aria-pressed="${active ? 'true' : 'false'}">${label}</button>`;
 }
 
-function filterBrands(country) {
-  document.querySelectorAll('#brandsGrid .brand-card-link').forEach(link => {
-    link.style.display = (country === '全部' || link.dataset.country === country) ? '' : 'none';
+function initToolbar(brands) {
+  const filterBar = document.getElementById('filterBar');
+  if (!filterBar) return;
+
+  const countries = ['全部', ...Array.from(new Set(brands.map(b => b.country)))];
+  const categories = ['全部', ...Array.from(new Set(brands.map(b => b.category)))];
+
+  filterBar.classList.add('toolbar');
+  filterBar.innerHTML = `
+    <div class="toolbar-row">
+      <span class="toolbar-label">產地</span>
+      <div class="toolbar-chips" data-group="country">
+        ${countries.map((c, i) => buildChip(c, 'country', c, i === 0)).join('')}
+      </div>
+    </div>
+    <div class="toolbar-row">
+      <span class="toolbar-label">類型</span>
+      <div class="toolbar-chips" data-group="category">
+        ${categories.map((c, i) => buildChip(c, 'category', c, i === 0)).join('')}
+      </div>
+      <div class="toolbar-sort-group">
+        <label for="sortSelect" class="toolbar-label">排序</label>
+        <select id="sortSelect" class="toolbar-sort">
+          <option value="default">預設順序</option>
+          <option value="name-asc">名稱 A-Z</option>
+          <option value="price-asc">價格：低 → 高</option>
+          <option value="price-desc">價格：高 → 低</option>
+        </select>
+      </div>
+    </div>
+  `;
+
+  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.dataset.group;
+      filterBar.querySelectorAll(`.filter-btn[data-group="${group}"]`).forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      applyFilters();
+    });
   });
+
+  const sortSel = filterBar.querySelector('#sortSelect');
+  if (sortSel) sortSel.addEventListener('change', applyFilters);
+
+  // 結果計數元素：插在 toolbar 之後、grid 之前
+  let counter = document.getElementById('resultCount');
+  if (!counter) {
+    counter = document.createElement('p');
+    counter.id = 'resultCount';
+    counter.className = 'result-count';
+    filterBar.insertAdjacentElement('afterend', counter);
+  }
 }
 
 function initSearch(brands) {
   const input = document.getElementById('searchInput');
   if (!input) return;
-  input.addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase().trim();
-    document.querySelectorAll('#brandsGrid .brand-card-link').forEach(link => {
-      link.style.display = link.textContent.toLowerCase().includes(keyword) ? '' : 'none';
-    });
-    const allBtn = document.querySelector('.filter-btn[data-filter="全部"]');
-    if (allBtn && keyword) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      allBtn.classList.add('active');
-    }
+  input.setAttribute('aria-label', '搜尋品牌');
+  input.addEventListener('input', applyFilters);
+}
+
+function getActiveFilter(group) {
+  const btn = document.querySelector(`.filter-btn[data-group="${group}"].active`);
+  return btn ? btn.dataset.value : '全部';
+}
+
+function applyFilters() {
+  const grid = document.getElementById('brandsGrid');
+  if (!grid) return;
+  const country = getActiveFilter('country');
+  const category = getActiveFilter('category');
+  const keyword = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const sort = document.getElementById('sortSelect')?.value || 'default';
+
+  const cards = Array.from(grid.querySelectorAll('.brand-card-link'));
+  let visible = 0;
+  cards.forEach(card => {
+    const matchCountry = country === '全部' || card.dataset.country === country;
+    const matchCategory = category === '全部' || card.dataset.category === category;
+    const matchKeyword = !keyword || card.textContent.toLowerCase().includes(keyword);
+    const show = matchCountry && matchCategory && matchKeyword;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
   });
+
+  if (sort !== 'default') {
+    const sorted = cards.slice().sort((a, b) => {
+      const aIdx = parseInt(a.dataset.idx, 10);
+      const bIdx = parseInt(b.dataset.idx, 10);
+      const aBrand = currentBrands[aIdx] || {};
+      const bBrand = currentBrands[bIdx] || {};
+      if (sort === 'name-asc') return (aBrand.name || '').localeCompare(bBrand.name || '', 'zh-Hant');
+      if (sort === 'price-asc') return parsePrice(aBrand.price) - parsePrice(bBrand.price);
+      if (sort === 'price-desc') return parsePrice(bBrand.price) - parsePrice(aBrand.price);
+      return 0;
+    });
+    sorted.forEach(c => grid.appendChild(c));
+  }
+
+  // 結果計數
+  const counter = document.getElementById('resultCount');
+  if (counter) {
+    counter.innerHTML = `共 <strong>${visible}</strong> / ${cards.length} 個品牌${keyword ? `（關鍵字「${escapeHtml(keyword)}」）` : ''}`;
+  }
+
+  // 空狀態
+  let emptyEl = grid.querySelector('.empty-state');
+  if (visible === 0) {
+    if (!emptyEl) {
+      emptyEl = document.createElement('div');
+      emptyEl.className = 'empty-state';
+      grid.appendChild(emptyEl);
+    }
+    emptyEl.innerHTML = `
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">沒有符合條件的品牌</div>
+      <p>試試調整篩選條件，或<button type="button" class="filter-btn" id="resetFilters" style="margin-left:0.3rem;">重設篩選</button></p>
+    `;
+    emptyEl.style.display = '';
+    const reset = emptyEl.querySelector('#resetFilters');
+    if (reset) reset.addEventListener('click', resetFilters);
+  } else if (emptyEl) {
+    emptyEl.style.display = 'none';
+  }
+}
+
+function resetFilters() {
+  document.querySelectorAll('.filter-btn[data-group]').forEach(btn => {
+    const isAll = btn.dataset.value === '全部';
+    btn.classList.toggle('active', isAll);
+    btn.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+  });
+  const search = document.getElementById('searchInput');
+  if (search) search.value = '';
+  const sortSel = document.getElementById('sortSelect');
+  if (sortSel) sortSel.value = 'default';
+  applyFilters();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 // ============ 品牌詳情頁 ============
@@ -409,6 +539,42 @@ function renderBrandPage() {
 
   // 產品列表
   renderProducts(brand);
+
+  // 上一個 / 下一個品牌
+  renderBrandPager(brand, spirit, spiritInfo);
+}
+
+function renderBrandPager(currentBrand, spirit, spiritInfo) {
+  const brands = spiritInfo.brands || [];
+  const idx = brands.findIndex(b => brandSlug(b) === brandSlug(currentBrand));
+  if (idx === -1) return;
+  const prev = idx > 0 ? brands[idx - 1] : null;
+  const next = idx < brands.length - 1 ? brands[idx + 1] : null;
+
+  const productsSection = document.getElementById('productsGrid')?.closest('.section');
+  if (!productsSection) return;
+  const container = productsSection.querySelector('.container');
+  if (!container) return;
+
+  // 移除舊的（重新進入頁面時）
+  container.querySelectorAll('.brand-pager').forEach(n => n.remove());
+
+  const pager = document.createElement('nav');
+  pager.className = 'brand-pager';
+  pager.setAttribute('aria-label', '同類別品牌');
+
+  const buildLink = (b, dir) => {
+    if (!b) return `<span class="brand-pager-spacer"></span>`;
+    return `
+      <a class="brand-pager-link ${dir}" href="brand.html?b=${encodeURIComponent(brandSlug(b))}">
+        <span class="brand-pager-direction">${dir === 'prev' ? '← 上一個品牌' : '下一個品牌 →'}</span>
+        <span class="brand-pager-name">${escapeHtml(b.name)}</span>
+      </a>
+    `;
+  };
+
+  pager.innerHTML = `${buildLink(prev, 'prev')}${buildLink(next, 'next')}`;
+  container.appendChild(pager);
 }
 
 function getBrandProducts(brand) {
@@ -438,8 +604,8 @@ function renderProducts(brand) {
     const labelColor = brand.labelColor || '#f0d878';
     const uniqueId = `p${idx}-${Math.random().toString(36).slice(2, 8)}`;
     return `
-      <div class="product-card" data-idx="${idx}">
-        <div class="product-image-box">
+      <div class="product-card" data-idx="${idx}" tabindex="0" role="button" aria-label="${escapeHtml(p.name)} - 點擊放大">
+        <div class="product-image-box loading">
           ${createBottleSVG(bottleColor, labelColor, label, uniqueId)}
         </div>
         <div class="product-info">
@@ -455,8 +621,60 @@ function renderProducts(brand) {
   gridEl.querySelectorAll('.product-card').forEach(card => {
     const idx = parseInt(card.dataset.idx, 10);
     const product = products[idx];
-    if (product) observeForProductImageLoad(card, product);
+    if (product) {
+      observeForProductImageLoad(card, product);
+      const openLb = () => openLightbox(card, product);
+      card.addEventListener('click', openLb);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(); }
+      });
+    }
   });
+}
+
+// ============ Lightbox ============
+
+function ensureLightbox() {
+  let lb = document.getElementById('productLightbox');
+  if (lb) return lb;
+  lb = document.createElement('div');
+  lb.id = 'productLightbox';
+  lb.className = 'lightbox';
+  lb.setAttribute('role', 'dialog');
+  lb.setAttribute('aria-modal', 'true');
+  lb.setAttribute('aria-label', '產品大圖');
+  lb.innerHTML = `
+    <button class="lightbox-close" aria-label="關閉">×</button>
+    <div class="lightbox-content">
+      <img class="lightbox-img" alt="" />
+      <div class="lightbox-caption"></div>
+    </div>
+  `;
+  document.body.appendChild(lb);
+
+  const close = () => {
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  lb.querySelector('.lightbox-close').addEventListener('click', close);
+  lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && lb.classList.contains('open')) close(); });
+  return lb;
+}
+
+function openLightbox(cardEl, product) {
+  // 只有當卡片裡已經是真實圖片時才開放大（SVG 佔位無意義）
+  const imgEl = cardEl.querySelector('.product-image-box img.product-image');
+  if (!imgEl) return;
+  const lb = ensureLightbox();
+  const big = lb.querySelector('.lightbox-img');
+  const cap = lb.querySelector('.lightbox-caption');
+  big.src = imgEl.src;
+  big.alt = product.name;
+  cap.innerHTML = `<div>${escapeHtml(product.name)}</div>${product.price ? `<div class="product-price">${escapeHtml(product.price)}</div>` : ''}`;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  lb.querySelector('.lightbox-close').focus();
 }
 
 function observeForProductImageLoad(cardEl, product) {
@@ -476,10 +694,13 @@ function observeForProductImageLoad(cardEl, product) {
 }
 
 async function loadProductImage(cardEl, product) {
-  const url = resolveLocalProductImage(product);
-  if (!url) return; // 沒有本地圖就保留 SVG（不打 Commons API，避免大量請求）
-
   const box = cardEl.querySelector('.product-image-box');
+  const url = resolveLocalProductImage(product);
+  if (!url) {
+    if (box) box.classList.remove('loading');
+    return;
+  }
+
   if (!box) return;
   const img = new Image();
   img.alt = product.name;
@@ -488,20 +709,120 @@ async function loadProductImage(cardEl, product) {
   img.referrerPolicy = 'no-referrer';
   img.onload = () => {
     box.innerHTML = '';
+    box.classList.remove('loading');
     box.appendChild(img);
     box.classList.add('has-image');
   };
+  img.onerror = () => box.classList.remove('loading');
   img.src = url;
 }
 
+// ============ 全站共用：skip-nav / 漢堡選單 / 麵包屑 ============
+
+function injectSkipNav() {
+  if (document.querySelector('.skip-nav')) return;
+  const link = document.createElement('a');
+  link.href = '#mainContent';
+  link.className = 'skip-nav';
+  link.textContent = '跳至主要內容';
+  document.body.insertBefore(link, document.body.firstChild);
+
+  // 找到第一個 main / section 加上 id 給 skip-nav 跳轉
+  let target = document.querySelector('main') || document.querySelector('header.page-header') || document.querySelector('.section');
+  if (target && !target.id) target.id = 'mainContent';
+}
+
+function initMobileMenu() {
+  const navContainer = document.querySelector('.nav-container');
+  if (!navContainer) return;
+  const navMenu = navContainer.querySelector('.nav-menu');
+  if (!navMenu) return;
+  if (navContainer.querySelector('.nav-toggle')) return; // 已注入
+
+  navMenu.id = navMenu.id || 'navMenu';
+  const btn = document.createElement('button');
+  btn.className = 'nav-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', '切換主選單');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', navMenu.id);
+  btn.innerHTML = '<span></span><span></span><span></span>';
+  navContainer.appendChild(btn);
+
+  btn.addEventListener('click', () => {
+    const open = navMenu.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  // 點選單外關閉
+  document.addEventListener('click', (e) => {
+    if (!navMenu.classList.contains('open')) return;
+    if (navContainer.contains(e.target)) return;
+    navMenu.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function injectBreadcrumb() {
+  const navbar = document.querySelector('.navbar');
+  if (!navbar) return;
+
+  const onCategoryPage = !!document.body.dataset.spirit;
+  const onBrandPage = !!document.body.dataset.brandPage;
+  if (!onCategoryPage && !onBrandPage) return;
+
+  // 計算路徑前綴：/pages/*.html 下要回到 ../index.html
+  const inPagesDir = window.location.pathname.includes('/pages/');
+  const homeHref = inPagesDir ? '../index.html' : 'index.html';
+
+  let items = [{ label: '首頁', href: homeHref }];
+
+  if (onCategoryPage) {
+    const data = window.spiritsData?.[document.body.dataset.spirit];
+    items.push({ label: data?.name || document.body.dataset.spirit, current: true });
+  } else if (onBrandPage) {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('b');
+    if (slug && window.spiritsData) {
+      const found = findBrandBySlug(slug);
+      if (found) {
+        items.push({ label: found.spiritInfo.name, href: `${found.spirit}.html` });
+        items.push({ label: found.brand.name, current: true });
+      }
+    }
+  }
+
+  const nav = document.createElement('nav');
+  nav.className = 'breadcrumb';
+  nav.setAttribute('aria-label', '麵包屑導覽');
+  nav.innerHTML = `
+    <div class="breadcrumb-inner">
+      <ol>
+        ${items.map(it => it.current
+          ? `<li aria-current="page">${escapeHtml(it.label)}</li>`
+          : `<li><a href="${it.href}">${escapeHtml(it.label)}</a></li>`).join('')}
+      </ol>
+    </div>
+  `;
+  navbar.insertAdjacentElement('afterend', nav);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  injectSkipNav();
+  initMobileMenu();
   initBackToTop();
+
   const spiritKey = document.body.dataset.spirit;
   if (spiritKey && window.spiritsData) {
     renderSpiritPage(spiritKey);
   } else if (document.body.dataset.brandPage && window.spiritsData) {
     renderBrandPage();
   }
+
+  injectBreadcrumb();
+
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-menu a').forEach(link => {
     const href = link.getAttribute('href').split('/').pop();

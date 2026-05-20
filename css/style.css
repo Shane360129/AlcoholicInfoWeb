@@ -852,3 +852,420 @@ a:hover { color: var(--color-amber-light); }
   padding: 3rem 1rem;
   font-size: 1rem;
 }
+
+/* ============================================
+   無障礙：skip nav + 全站 focus 樣式
+   ============================================ */
+.skip-nav {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-amber);
+  color: var(--color-bg);
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  z-index: 1000;
+  text-decoration: none;
+  border-radius: 0 0 6px 0;
+  transition: top 0.2s ease;
+}
+
+.skip-nav:focus {
+  top: 0;
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================
+   手機漢堡選單
+   ============================================ */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  z-index: 101;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 1px;
+  transition: all 0.25s ease;
+}
+
+.nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2) { opacity: 0; }
+.nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+  .nav-container { position: relative; }
+  .nav-menu {
+    position: absolute;
+    top: calc(100% + 1rem);
+    left: -1.5rem;
+    right: -1.5rem;
+    background: rgba(26, 20, 16, 0.98);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    gap: 0;
+  }
+  .nav-menu.open {
+    max-height: 600px;
+    padding: 0.5rem 1.5rem 1rem;
+  }
+  .nav-menu li { width: 100%; }
+  .nav-menu a {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 1rem;
+  }
+  .nav-menu li:last-child a { border-bottom: none; }
+}
+
+/* ============================================
+   麵包屑
+   ============================================ */
+.breadcrumb {
+  padding: 1rem 0 0.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.breadcrumb-inner {
+  padding: 0 1.5rem;
+}
+
+.breadcrumb ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.breadcrumb li + li::before {
+  content: '›';
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.breadcrumb a {
+  color: var(--color-text-muted);
+}
+
+.breadcrumb a:hover {
+  color: var(--color-amber);
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--color-amber-light);
+  font-weight: 500;
+}
+
+/* ============================================
+   進階工具列：篩選 + 排序
+   ============================================ */
+.filter-bar.toolbar,
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+  padding: 1.2rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  justify-content: flex-start;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.toolbar-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  min-width: 3rem;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.toolbar-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.toolbar-sort-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.toolbar-sort {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.toolbar-sort:hover { border-color: var(--color-amber); }
+
+.result-count {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.result-count strong {
+  color: var(--color-amber-light);
+  font-weight: 600;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--color-text-muted);
+  background: var(--color-card);
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================
+   圖片骨架屏
+   ============================================ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.brand-bottle.loading,
+.product-image-box.loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 8px;
+}
+
+.brand-bottle.loading .bottle-svg,
+.product-image-box.loading .bottle-svg {
+  opacity: 0.55;
+}
+
+/* ============================================
+   品牌頁：上一個/下一個品牌
+   ============================================ */
+.brand-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.brand-pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.2rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  min-width: 0;
+}
+
+.brand-pager-link:hover {
+  border-color: var(--color-amber);
+  background: var(--color-card-hover);
+  transform: translateY(-2px);
+}
+
+.brand-pager-link.next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.brand-pager-direction {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.brand-pager-name {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--color-amber-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.brand-pager-spacer {
+  visibility: hidden;
+}
+
+@media (max-width: 600px) {
+  .brand-pager { grid-template-columns: 1fr; }
+  .brand-pager-link.next { text-align: left; align-items: flex-start; }
+}
+
+/* ============================================
+   產品圖燈箱 (Lightbox)
+   ============================================ */
+.product-card {
+  cursor: pointer;
+}
+
+.product-image-box.has-image {
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.lightbox.open {
+  display: flex;
+}
+
+.lightbox-content {
+  max-width: min(90vw, 600px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.6));
+}
+
+.lightbox-caption {
+  color: var(--color-text);
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+}
+
+.lightbox-caption .product-price {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   響應式（補充）
+   ============================================ */
+@media (max-width: 768px) {
+  .toolbar { padding: 1rem; }
+  .toolbar-sort-group { width: 100%; margin-left: 0; }
+  .toolbar-sort { flex: 1; }
+}
