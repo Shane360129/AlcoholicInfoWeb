@@ -750,3 +750,105 @@ a:hover { color: var(--color-amber-light); }
   background: var(--color-amber-light);
   transform: translateY(-3px);
 }
+
+/* ============================================
+   品牌卡片連結 / 品牌詳情頁
+   ============================================ */
+.brand-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-card-link:hover { text-decoration: none; }
+
+.back-link {
+  display: inline-block;
+  color: var(--color-amber);
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover { color: var(--color-amber-light); }
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.product-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1.2rem;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.product-card:hover {
+  background: var(--color-card-hover);
+  border-color: var(--color-amber);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-soft);
+}
+
+.product-image-box {
+  width: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.product-image-box.has-image {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.product-image {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.5));
+  animation: fadeIn 0.5s ease-out;
+}
+
+.product-info { width: 100%; }
+
+.product-name {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--color-amber-light);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.product-desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.product-price {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  margin-top: 0.5rem;
+}
+
+.no-products {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 3rem 1rem;
+  font-size: 1rem;
+}

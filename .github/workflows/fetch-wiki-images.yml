@@ -18,17 +18,20 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fetch Wikipedia images
+      - name: Fetch Wikipedia 品牌縮圖
         run: node scripts/fetch-wiki-images.js
+
+      - name: Fetch Wikimedia Commons 產品圖
+        run: node scripts/fetch-product-images.js
 
       - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add images/wiki data/wiki-images.js
+          git add images/wiki images/products data/wiki-images.js data/product-images.js
           if git diff --cached --quiet; then
             echo "圖片無變更，跳過 commit"
           else
-            git commit -m "自動更新 Wikipedia 圖片快取"
+            git commit -m "自動更新 Wikipedia / Commons 圖片快取"
             git push
           fi

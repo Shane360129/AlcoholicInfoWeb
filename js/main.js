@@ -235,6 +235,31 @@ function renderSpiritPage(spiritKey) {
   initSearch(data.brands);
 }
 
+function brandSlug(brand) {
+  if (brand.slug) return brand.slug;
+  const matches = brand.name.match(/[A-Za-z][A-Za-z0-9'.&\-\s]+/g);
+  if (matches) {
+    const s = matches.join(' ').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (s) return s;
+  }
+  if (brand.wikiPage) {
+    return brand.wikiPage.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
+  }
+  return brand.name.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function findBrandBySlug(slug) {
+  if (!window.spiritsData) return null;
+  for (const spiritKey of Object.keys(window.spiritsData)) {
+    const info = window.spiritsData[spiritKey];
+    if (!info || !info.brands) continue;
+    for (const b of info.brands) {
+      if (brandSlug(b) === slug) return { brand: b, spirit: spiritKey, spiritInfo: info };
+    }
+  }
+  return null;
+}
+
 function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
   const el = document.getElementById('brandsGrid');
   if (!el) return;
@@ -244,32 +269,35 @@ function renderBrands(brands, defaultBottleColor, defaultLabelColor) {
     const bottleColor = b.bottleColor || defaultBottleColor || '#b87333';
     const labelColor = b.labelColor || defaultLabelColor || '#f0d878';
     const uniqueId = `b${idx}-${Math.random().toString(36).slice(2, 8)}`;
+    const slug = brandSlug(b);
     return `
-      <div class="brand-card" data-country="${b.country}" data-category="${b.category}" data-name="${b.name.toLowerCase()}" data-idx="${idx}">
-        <div class="brand-bottle">
-          ${createBottleSVG(bottleColor, labelColor, label, uniqueId)}
-        </div>
-        <div class="brand-info">
-          <div class="brand-card-header">
-            <div class="brand-name">${b.name}</div>
-            <div class="brand-tags">
-              <span class="brand-tag country">${b.country}</span>
-              <span class="brand-tag">${b.category}</span>
-            </div>
+      <a class="brand-card-link" href="brand.html?b=${encodeURIComponent(slug)}" data-country="${b.country}" data-category="${b.category}" data-name="${b.name.toLowerCase()}" data-idx="${idx}">
+        <div class="brand-card">
+          <div class="brand-bottle">
+            ${createBottleSVG(bottleColor, labelColor, label, uniqueId)}
           </div>
-          <p class="brand-desc">${b.desc}</p>
-          ${b.price ? `<div class="brand-price"><span class="price-icon">💰</span> <span class="price-text">${b.price}</span></div>` : ''}
+          <div class="brand-info">
+            <div class="brand-card-header">
+              <div class="brand-name">${b.name}</div>
+              <div class="brand-tags">
+                <span class="brand-tag country">${b.country}</span>
+                <span class="brand-tag">${b.category}</span>
+              </div>
+            </div>
+            <p class="brand-desc">${b.desc}</p>
+            ${b.price ? `<div class="brand-price"><span class="price-icon">💰</span> <span class="price-text">${b.price}</span></div>` : ''}
+          </div>
         </div>
-      </div>
+      </a>
     `;
   }).join('');
 
   // 啟動 Wikipedia 圖片懶載入
-  el.querySelectorAll('.brand-card').forEach(card => {
-    const idx = parseInt(card.dataset.idx, 10);
+  el.querySelectorAll('.brand-card-link').forEach(linkEl => {
+    const idx = parseInt(linkEl.dataset.idx, 10);
     const brand = brands[idx];
     if (brand && brand.wikiPage) {
-      observeForImageLoad(card, brand);
+      observeForImageLoad(linkEl.querySelector('.brand-card'), brand);
     }
   });
 }
@@ -291,8 +319,8 @@ function initFilters(brands) {
 }
 
 function filterBrands(country) {
-  document.querySelectorAll('#brandsGrid .brand-card').forEach(card => {
-    card.style.display = (country === '全部' || card.dataset.country === country) ? '' : 'none';
+  document.querySelectorAll('#brandsGrid .brand-card-link').forEach(link => {
+    link.style.display = (country === '全部' || link.dataset.country === country) ? '' : 'none';
   });
 }
 
@@ -301,8 +329,8 @@ function initSearch(brands) {
   if (!input) return;
   input.addEventListener('input', (e) => {
     const keyword = e.target.value.toLowerCase().trim();
-    document.querySelectorAll('#brandsGrid .brand-card').forEach(card => {
-      card.style.display = card.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+    document.querySelectorAll('#brandsGrid .brand-card-link').forEach(link => {
+      link.style.display = link.textContent.toLowerCase().includes(keyword) ? '' : 'none';
     });
     const allBtn = document.querySelector('.filter-btn[data-filter="全部"]');
     if (allBtn && keyword) {
@@ -312,11 +340,167 @@ function initSearch(brands) {
   });
 }
 
+// ============ 品牌詳情頁 ============
+
+function resolveLocalProductImage(product) {
+  if (!window.productImages) return null;
+  const relPath = window.productImages[product.name];
+  if (!relPath) return null;
+  // 此頁固定在 /pages/ 之下，永遠加上 ../
+  return '../' + relPath;
+}
+
+function renderBrandPage() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('b');
+  if (!slug) {
+    document.body.innerHTML = '<div style="padding:4rem;text-align:center;">缺少品牌參數 ?b=&lt;slug&gt;</div>';
+    return;
+  }
+
+  const found = findBrandBySlug(slug);
+  if (!found) {
+    document.body.innerHTML = `<div style="padding:4rem;text-align:center;">找不到品牌：${slug}</div>`;
+    return;
+  }
+  const { brand, spirit, spiritInfo } = found;
+
+  // 標題與 meta
+  document.title = `${brand.name} | 烈酒知識網`;
+  const descMeta = document.getElementById('pageDesc');
+  if (descMeta) descMeta.setAttribute('content', `${brand.name}（${brand.country}）— ${brand.desc}`);
+
+  // 返回連結
+  const backLink = document.getElementById('backLink');
+  if (backLink) {
+    backLink.href = `${spirit}.html`;
+    backLink.textContent = `← 返回${spiritInfo.name}`;
+  }
+
+  // 頁面 header
+  const headerEl = document.getElementById('brandHeader');
+  if (headerEl) {
+    headerEl.innerHTML = `
+      <span class="icon-large">${spiritInfo.icon}</span>
+      <h1>${brand.name}</h1>
+      <span class="name-en">${brand.country} · ${brand.category}</span>
+    `;
+  }
+
+  // 描述
+  const descEl = document.getElementById('brandDescription');
+  if (descEl) {
+    descEl.innerHTML = `<p style="font-size:1.05rem;line-height:1.8;">${brand.desc}</p>`;
+  }
+
+  // 資訊網格
+  const infoEl = document.getElementById('brandInfoGrid');
+  if (infoEl) {
+    const rows = [
+      { label: '所屬類別', value: spiritInfo.name },
+      { label: '產地', value: brand.country },
+      { label: '類型', value: brand.category }
+    ];
+    if (brand.price) rows.push({ label: '台灣參考價', value: brand.price });
+    infoEl.innerHTML = rows.map(r =>
+      `<div class="info-cell"><div class="label">${r.label}</div><div class="value">${r.value}</div></div>`
+    ).join('');
+  }
+
+  // 產品列表
+  renderProducts(brand);
+}
+
+function getBrandProducts(brand) {
+  if (Array.isArray(brand.products)) return brand.products;
+  if (window.brandProducts && Array.isArray(window.brandProducts[brand.name])) {
+    return window.brandProducts[brand.name];
+  }
+  return [];
+}
+
+function renderProducts(brand) {
+  const gridEl = document.getElementById('productsGrid');
+  const noneEl = document.getElementById('noProducts');
+  if (!gridEl) return;
+
+  const products = getBrandProducts(brand);
+  if (products.length === 0) {
+    gridEl.innerHTML = '';
+    if (noneEl) noneEl.style.display = 'block';
+    return;
+  }
+  if (noneEl) noneEl.style.display = 'none';
+
+  gridEl.innerHTML = products.map((p, idx) => {
+    const label = getBottleLabel(p.name);
+    const bottleColor = brand.bottleColor || '#b87333';
+    const labelColor = brand.labelColor || '#f0d878';
+    const uniqueId = `p${idx}-${Math.random().toString(36).slice(2, 8)}`;
+    return `
+      <div class="product-card" data-idx="${idx}">
+        <div class="product-image-box">
+          ${createBottleSVG(bottleColor, labelColor, label, uniqueId)}
+        </div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          ${p.desc ? `<p class="product-desc">${p.desc}</p>` : ''}
+          ${p.price ? `<div class="product-price"><span class="price-icon">💰</span> <span class="price-text">${p.price}</span></div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 懶載入產品圖
+  gridEl.querySelectorAll('.product-card').forEach(card => {
+    const idx = parseInt(card.dataset.idx, 10);
+    const product = products[idx];
+    if (product) observeForProductImageLoad(card, product);
+  });
+}
+
+function observeForProductImageLoad(cardEl, product) {
+  if (!('IntersectionObserver' in window)) {
+    loadProductImage(cardEl, product);
+    return;
+  }
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        loadProductImage(cardEl, product);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '200px' });
+  observer.observe(cardEl);
+}
+
+async function loadProductImage(cardEl, product) {
+  const url = resolveLocalProductImage(product);
+  if (!url) return; // 沒有本地圖就保留 SVG（不打 Commons API，避免大量請求）
+
+  const box = cardEl.querySelector('.product-image-box');
+  if (!box) return;
+  const img = new Image();
+  img.alt = product.name;
+  img.className = 'product-image';
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+  img.onload = () => {
+    box.innerHTML = '';
+    box.appendChild(img);
+    box.classList.add('has-image');
+  };
+  img.src = url;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initBackToTop();
   const spiritKey = document.body.dataset.spirit;
   if (spiritKey && window.spiritsData) {
     renderSpiritPage(spiritKey);
+  } else if (document.body.dataset.brandPage && window.spiritsData) {
+    renderBrandPage();
   }
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-menu a').forEach(link => {
