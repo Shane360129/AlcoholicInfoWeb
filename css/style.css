@@ -389,6 +389,28 @@ a:hover { color: var(--color-amber-light); }
   align-items: center;
   justify-content: center;
   padding-top: 0.3rem;
+  min-height: 140px;
+  position: relative;
+}
+
+.brand-bottle.has-image {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.brand-image {
+  width: 100%;
+  max-width: 70px;
+  max-height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.brand-card:hover .brand-image {
+  transform: translateY(-4px) scale(1.05);
 }
 
 .bottle-svg {
@@ -665,6 +687,10 @@ a:hover { color: var(--color-amber-light); }
   .bottle-svg {
     width: 50px;
     height: 116px;
+  }
+  .brand-image {
+    max-width: 56px;
+    max-height: 116px;
   }
   .info-grid {
     grid-template-columns: 1fr;
