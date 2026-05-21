@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>琴酒 Gin | 烈酒知識網</title>
-  <meta name="description" content="琴酒完整指南：倫敦乾、普利茅斯、荷蘭琴酒等種類與市場品牌介紹。">
+  <title id="pageTitle">品牌詳情 | 烈酒知識網</title>
+  <meta name="description" id="pageDesc" content="烈酒品牌與現售酒款介紹">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css">
 </head>
-<body data-spirit="gin">
+<body data-brand-page="1">
 
   <nav class="navbar">
     <div class="nav-container">
@@ -32,40 +32,22 @@
     </div>
   </nav>
 
-  <header class="page-header" id="pageHeader"></header>
+  <header class="page-header" id="brandHeader"></header>
 
   <section class="section">
     <div class="container">
-      <div id="description"></div>
-      <div class="info-grid" id="infoGrid"></div>
+      <a id="backLink" class="back-link" href="../index.html">← 返回</a>
+      <div id="brandDescription"></div>
+      <div class="info-grid" id="brandInfoGrid"></div>
     </div>
   </section>
 
-  <section class="section" id="typesSection" style="background:var(--color-bg-soft);">
+  <section class="section" style="background:var(--color-bg-soft);">
     <div class="container">
-      <h2 class="section-title">主要種類</h2>
-      <p class="section-subtitle">依製法與風格分類</p>
-      <div class="types-list" id="typesList"></div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <h2 class="section-title">市場現售品牌</h2>
-      <p class="section-subtitle">點擊國家標籤可篩選，或使用搜尋查找品牌</p>
-
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="搜尋品牌名稱、產地、特色⋯⋯">
-      </div>
-
-      <div class="notice-banner" style="margin-bottom:1rem;">
-        <strong>💰 價格與圖片說明：</strong>
-        以下價格為 <strong>2026 年台灣市場參考零售價</strong>（多以 700ml 規格為基準），整理自酒條通、買酒網 MY9、橡木桶洋酒等台灣酒商網站。實際價格依酒商、年份與促銷而異，請以購買當下店家報價為準。<br>圖片由 <strong>Wikipedia</strong> 即時取得（CC 授權），若該品牌無維基條目則顯示 SVG 酒瓶。
-      </div>
-
-      <div class="filter-bar" id="filterBar"></div>
-
-      <div class="brands-grid" id="brandsGrid"></div>
+      <h2 class="section-title">現售酒款</h2>
+      <p class="section-subtitle">台灣市場主要販售酒款，圖片來自 Wikimedia Commons</p>
+      <div class="products-grid" id="productsGrid"></div>
+      <p id="noProducts" class="no-products" style="display:none;">尚未整理該品牌的酒款資料，歡迎回報補充。</p>
     </div>
   </section>
 
@@ -86,6 +68,8 @@
 
   <script src="../data/spirits.js"></script>
   <script src="../data/wiki-images.js"></script>
+  <script src="../data/brand-products.js"></script>
+  <script src="../data/product-images.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>
