@@ -136,10 +136,12 @@ async function loadWikiImage(cardEl, brand) {
 
   if (!bottleEl) return;
 
+  // 不可設 img.loading='lazy'：此 img 尚未進 DOM，lazy 會把載入延後到
+  // 它被插入且接近視窗，但我們是 onload 才插入 → 死結，永遠不載入。
+  // 延遲載入已由 observeForImageLoad 的 IntersectionObserver 處理。
   const img = new Image();
   img.alt = brand.name;
   img.className = 'brand-image';
-  img.loading = 'lazy';
   img.referrerPolicy = 'no-referrer';
   img.onload = () => {
     bottleEl.innerHTML = '';
@@ -738,10 +740,10 @@ async function loadProductImage(cardEl, product) {
   }
 
   if (!box) return;
+  // 同 loadWikiImage：detached img 不可設 loading='lazy'，否則死結不載入。
   const img = new Image();
   img.alt = product.name;
   img.className = 'product-image';
-  img.loading = 'lazy';
   img.referrerPolicy = 'no-referrer';
   img.onload = () => {
     box.innerHTML = '';
