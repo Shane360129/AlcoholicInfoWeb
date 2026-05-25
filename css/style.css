@@ -1,22 +1,22 @@
 /* ============================================
    烈酒知識網 - 主樣式表
-   風格：深色復古、琥珀金色調，呈現精品酒類氛圍
+   風格：淺色溫潤、琥珀金色調，呈現精品酒類氛圍
    ============================================ */
 
 :root {
-  --color-bg: #1a1410;
-  --color-bg-soft: #241b15;
-  --color-card: #2c2118;
-  --color-card-hover: #36281d;
-  --color-border: #4a3622;
-  --color-amber: #d4a358;
-  --color-amber-light: #f0c878;
-  --color-amber-dark: #a17a3b;
-  --color-text: #e8ddc9;
-  --color-text-muted: #a89880;
-  --color-accent: #c44d2f;
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-strong: 0 10px 40px rgba(0, 0, 0, 0.6);
+  --color-bg: #faf6ef;
+  --color-bg-soft: #f1e8d7;
+  --color-card: #ffffff;
+  --color-card-hover: #fbf6ec;
+  --color-border: #e4d8c2;
+  --color-amber: #a9741f;
+  --color-amber-light: #8a5618;
+  --color-amber-dark: #6d440f;
+  --color-text: #3a2e1f;
+  --color-text-muted: #786753;
+  --color-accent: #b8431f;
+  --shadow-soft: 0 4px 18px rgba(80, 55, 20, 0.10);
+  --shadow-strong: 0 10px 34px rgba(80, 55, 20, 0.16);
   --font-serif: "Noto Serif TC", "Georgia", serif;
   --font-sans: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
 }
@@ -74,7 +74,7 @@ a:hover { color: var(--color-amber-light); }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(26, 20, 16, 0.92);
+  background: rgba(250, 246, 239, 0.85);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
   padding: 1rem 0;
@@ -394,7 +394,7 @@ a:hover { color: var(--color-amber-light); }
 }
 
 .brand-bottle.has-image {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgba(120, 90, 40, 0.06), rgba(120, 90, 40, 0.02));
   border-radius: 8px;
   padding: 6px;
 }
@@ -404,7 +404,7 @@ a:hover { color: var(--color-amber-light); }
   max-width: 70px;
   max-height: 140px;
   object-fit: contain;
-  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(2px 4px 8px rgba(80, 55, 20, 0.22));
   transition: transform 0.3s ease;
   animation: fadeIn 0.5s ease-out;
 }
@@ -416,7 +416,7 @@ a:hover { color: var(--color-amber-light); }
 .bottle-svg {
   width: 60px;
   height: 140px;
-  filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(2px 4px 6px rgba(80, 55, 20, 0.18));
   transition: transform 0.3s ease;
 }
 
@@ -809,7 +809,7 @@ a:hover { color: var(--color-amber-light); }
 }
 
 .product-image-box.has-image {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgba(120, 90, 40, 0.06), rgba(120, 90, 40, 0.02));
   border-radius: 8px;
   padding: 8px;
 }
@@ -818,7 +818,7 @@ a:hover { color: var(--color-amber-light); }
   max-width: 100%;
   max-height: 200px;
   object-fit: contain;
-  filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(2px 4px 8px rgba(80, 55, 20, 0.22));
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -931,7 +931,7 @@ a:hover { color: var(--color-amber-light); }
     top: calc(100% + 1rem);
     left: -1.5rem;
     right: -1.5rem;
-    background: rgba(26, 20, 16, 0.98);
+    background: rgba(250, 246, 239, 0.98);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--color-border);
     flex-direction: column;
@@ -1108,9 +1108,9 @@ a:hover { color: var(--color-amber-light); }
 .product-image-box.loading {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 100%
+    rgba(80, 55, 20, 0.04) 0%,
+    rgba(80, 55, 20, 0.10) 50%,
+    rgba(80, 55, 20, 0.04) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
