@@ -16,6 +16,11 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# 強制 JS actions 以 Node 24 執行，消除 Node 20 淘汰警告
+# （2026-06-02 起 Node 24 將成預設，屆時本設定為無作用、可移除）
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     environment:
