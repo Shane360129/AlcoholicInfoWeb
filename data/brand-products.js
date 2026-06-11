@@ -1,7 +1,8 @@
 // 各品牌「現售酒款」資料
 // 鍵：brand.name（與 spirits.js 完全一致）
-// 值：產品陣列，每個產品有 name / desc / price，可選 searchQuery（Commons 搜尋字串）
-// 圖片由 scripts/fetch-product-images.js 從 Wikimedia Commons 搜尋下載
+// 值：產品陣列，每個產品有 name / desc / price，
+//     可選 searchQuery（搜尋字串）與 imageUrl（手動指定商品圖網址，最高優先）
+// 商品圖由 scripts/fetch-product-images.js 抓取（Systembolaget / Shopify 零售商 / Bing）
 (function (g) {
   g.brandProducts = {
 

@@ -1,7 +1,28 @@
-name: 更新 Wikipedia 圖片快取
+name: 更新圖片快取
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: '抓什麼：products | wiki | both'
+        required: false
+        default: 'products'
+      refetch:
+        description: '產品圖模式：missing（只補缺圖）| all（全部重抓）'
+        required: false
+        default: 'missing'
+      only:
+        description: '只抓指定產品名稱（| 分隔），留空為全部'
+        required: false
+        default: ''
+  # 開發分支推送抓圖相關檔案時自動執行（參數讀 scripts/refetch.json）；
+  # bot 回寫的 commit 只動 images/ 與 data/product-images*，不會重新觸發
+  push:
+    branches: [ 'claude/**' ]
+    paths:
+      - 'scripts/fetch-product-images.js'
+      - 'scripts/refetch.json'
+      - '.github/workflows/fetch-wiki-images.yml'
 
 permissions:
   contents: write
@@ -24,19 +45,25 @@ jobs:
           node-version: '20'
 
       - name: Fetch Wikipedia 品牌縮圖
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.target == 'wiki' || inputs.target == 'both') }}
         run: node scripts/fetch-wiki-images.js
 
-      - name: Fetch Wikimedia Commons 產品圖
+      - name: Fetch 產品商品圖
+        if: ${{ github.event_name == 'push' || inputs.target == 'products' || inputs.target == 'both' || inputs.target == '' }}
+        env:
+          REFETCH: ${{ github.event_name == 'workflow_dispatch' && inputs.refetch || '' }}
+          ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.only || '' }}
         run: node scripts/fetch-product-images.js
 
       - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add images/wiki images/products data/wiki-images.js data/product-images.js
+          git add images/wiki images/products data/wiki-images.js data/product-images.js data/product-image-sources.json
           if git diff --cached --quiet; then
             echo "圖片無變更，跳過 commit"
           else
-            git commit -m "自動更新 Wikipedia / Commons 圖片快取"
+            git commit -m "自動更新商品圖快取"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
