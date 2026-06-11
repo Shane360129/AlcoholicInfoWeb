@@ -45,8 +45,12 @@ const SHOPIFY_STORES = [
   'caskcartel.com'
 ];
 
-const REFETCH = (process.env.REFETCH || 'missing').toLowerCase();
-const ONLY = (process.env.ONLY || '').split('|').map(s => s.trim()).filter(Boolean);
+// 參數：環境變數優先，否則讀 scripts/refetch.json（push 觸發時用）
+let fileCfg = {};
+try { fileCfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'refetch.json'), 'utf8')); } catch (e) { /* 沒有設定檔 */ }
+const REFETCH = (process.env.REFETCH || fileCfg.refetch || 'missing').toLowerCase();
+const ONLY = (process.env.ONLY || (Array.isArray(fileCfg.only) ? fileCfg.only.join('|') : ''))
+  .split('|').map(s => s.trim()).filter(Boolean);
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 

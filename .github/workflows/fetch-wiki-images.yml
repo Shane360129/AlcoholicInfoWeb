@@ -15,6 +15,14 @@ on:
         description: '只抓指定產品名稱（| 分隔），留空為全部'
         required: false
         default: ''
+  # 開發分支推送抓圖相關檔案時自動執行（參數讀 scripts/refetch.json）；
+  # bot 回寫的 commit 只動 images/ 與 data/product-images*，不會重新觸發
+  push:
+    branches: [ 'claude/**' ]
+    paths:
+      - 'scripts/fetch-product-images.js'
+      - 'scripts/refetch.json'
+      - '.github/workflows/fetch-wiki-images.yml'
 
 permissions:
   contents: write
@@ -37,14 +45,14 @@ jobs:
           node-version: '20'
 
       - name: Fetch Wikipedia 品牌縮圖
-        if: ${{ inputs.target == 'wiki' || inputs.target == 'both' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.target == 'wiki' || inputs.target == 'both') }}
         run: node scripts/fetch-wiki-images.js
 
       - name: Fetch 產品商品圖
-        if: ${{ inputs.target == 'products' || inputs.target == 'both' || inputs.target == '' }}
+        if: ${{ github.event_name == 'push' || inputs.target == 'products' || inputs.target == 'both' || inputs.target == '' }}
         env:
-          REFETCH: ${{ inputs.refetch }}
-          ONLY: ${{ inputs.only }}
+          REFETCH: ${{ github.event_name == 'workflow_dispatch' && inputs.refetch || '' }}
+          ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.only || '' }}
         run: node scripts/fetch-product-images.js
 
       - name: Commit & push
@@ -56,5 +64,6 @@ jobs:
             echo "圖片無變更，跳過 commit"
           else
             git commit -m "自動更新商品圖快取"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push
           fi
